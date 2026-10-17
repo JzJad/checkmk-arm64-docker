@@ -1,0 +1,17 @@
+#!/bin/bash
+# Archive the site before the entrypoint runs "omd update". The site is not
+# running at this point, so a plain tarball is consistent. Enable with
+# CMK_BACKUP_ON_UPDATE=on and mount a volume at /backups.
+
+set -e -o pipefail
+
+if [ "$CMK_BACKUP_ON_UPDATE" != "on" ]; then
+    exit 0
+fi
+
+BACKUP_DIR=/backups
+BACKUP_FILE="$BACKUP_DIR/$CMK_SITE_ID-pre-update-$(date +%Y%m%d-%H%M%S).tar.gz"
+
+mkdir -p "$BACKUP_DIR"
+echo "### BACKING UP SITE '$CMK_SITE_ID' TO $BACKUP_FILE"
+tar -czf "$BACKUP_FILE" -C /omd/sites "$CMK_SITE_ID"

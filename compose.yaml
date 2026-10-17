@@ -1,0 +1,20 @@
+services:
+  checkmk:
+    image: ghcr.io/jzjad/checkmk-arm64-docker:latest
+    container_name: checkmk
+    restart: unless-stopped
+    environment:
+      CMK_SITE_ID: cmk
+      # Leave empty to have a random password printed in the logs on first start
+      CMK_PASSWORD: ""
+      TZ: Etc/UTC
+      # CMK_BACKUP_ON_UPDATE: "on"
+      # MAIL_RELAY_HOST: mail.example.com
+    ports:
+      - "5000:5000"
+      - "8000:8000"
+    volumes:
+      - ./sites:/omd/sites
+      - ./backups:/backups
+    tmpfs:
+      - /opt/omd/sites/cmk/tmp:uid=1000,gid=1000

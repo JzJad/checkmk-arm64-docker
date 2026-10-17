@@ -1,0 +1,118 @@
+name: Docker
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # Monthly rebuild to pick up base image security updates
+  schedule:
+    - cron: '0 0 1 * *'
+  # Also used by check-upstream.yml to test its PR branch
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/jzjad/checkmk-arm64-docker
+
+jobs:
+  variants:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read versions.json
+        id: read
+        run: |
+          echo "matrix=$(jq -c '{include: .}' versions.json)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: variants
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.variants.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build args and minor version
+        id: cmk
+        env:
+          VARIANT: ${{ matrix.variant }}
+          VERSION: ${{ matrix.version }}
+        run: |
+          echo "minor=$(echo "$VERSION" | cut -d. -f1,2)" >> "$GITHUB_OUTPUT"
+          {
+            echo "build-args<<EOF"
+            jq -r --arg v "$VARIANT" '.[] | select(.variant == $v) |
+              "IMAGE_CMK_BASE=\(.base_image)",
+              "DISTRO_CODENAME=\(.distro)",
+              "CMK_EDITION=\(.edition)",
+              "CMK_VERSION=\(.version)",
+              "CMK_RELEASE_TAG=\(.release_tag)",
+              "CMK_PKG_SHA256=\(.sha256)",
+              "CMK_EXTRA_PACKAGES=\(.extra_packages)"' versions.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # <version>-<variant>, <minor>-<variant> and <variant> for every variant;
+      # plain <version>, <minor> and latest for the one marked latest
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ matrix.version }}-${{ matrix.variant }}
+            type=raw,value=${{ steps.cmk.outputs.minor }}-${{ matrix.variant }}
+            type=raw,value=${{ matrix.variant }}
+            type=raw,value=${{ matrix.version }},enable=${{ matrix.latest }}
+            type=raw,value=${{ steps.cmk.outputs.minor }},enable=${{ matrix.latest }}
+            type=raw,value=latest,enable=${{ matrix.latest }}
+          flavor: latest=false
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: cmk-smoke-test:${{ matrix.variant }}
+          build-args: ${{ steps.cmk.outputs.build-args }}
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,scope=${{ matrix.variant }},mode=max
+
+      - name: Smoke test
+        run: scripts/smoke-test.sh cmk-smoke-test:${{ matrix.variant }}
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Same inputs as the build above, so this is served from the cache
+      - name: Push image
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ steps.cmk.outputs.build-args }}
+          cache-from: type=gha,scope=${{ matrix.variant }}

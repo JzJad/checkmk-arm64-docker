@@ -1,0 +1,51 @@
+name: Check upstream
+
+# Opens a PR when sergiodadi/check-mk-raspberry publishes a newer (or a
+# re-uploaded) package for one of the variants in versions.json.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for a new version
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/check-upstream.sh >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.check.outputs.title != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: ${{ steps.check.outputs.title }}
+        run: |
+          # Named after the new pins, so a re-run doesn't open a duplicate
+          branch="upstream/$(sha256sum versions.json | cut -c1-12)"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "Branch $branch already exists"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "$TITLE"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "$TITLE" \
+            --body "New upstream package from https://github.com/sergiodadi/check-mk-raspberry/releases. Merging publishes the image."
+          # PRs opened with GITHUB_TOKEN don't trigger pull_request workflows,
+          # so build and smoke test the branch explicitly.
+          gh workflow run docker-publish.yml --ref "$branch"
