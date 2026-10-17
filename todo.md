@@ -1,2 +1,0 @@
-This is a new version of this repo: (https://github.com/JzJad/rpi-checkmk)
-We will use this repo for the base images go forward (https://github.com/sergiodadi/check-mk-raspberry) as the old one has not been maintained.
