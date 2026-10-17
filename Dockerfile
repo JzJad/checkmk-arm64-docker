@@ -1,3 +1,7 @@
+# check=skip=SecretsUsedInArgOrEnv
+# (CMK_PASSWORD is empty by default and only set at runtime, as in the
+# official image)
+#
 # Checkmk for arm64, based on the official Checkmk docker_image/Dockerfile.
 # The packages are built from the official sources by
 # https://github.com/sergiodadi/check-mk-raspberry
@@ -46,6 +50,9 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 # install so version bumps reuse this layer.
 # hadolint ignore=DL3008
 RUN set -e \
+    # ubuntu:24.04 ships a default "ubuntu" user with UID/GID 1000, which the
+    # entrypoint needs for the site user
+    && if getent passwd ubuntu >/dev/null; then userdel -r ubuntu; fi \
     && echo "exit 101" > /usr/sbin/policy-rc.d \
     && chmod +x /usr/sbin/policy-rc.d \
     && export DEBIAN_FRONTEND=noninteractive \
