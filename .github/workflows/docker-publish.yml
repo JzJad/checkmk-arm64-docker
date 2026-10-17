@@ -27,6 +27,13 @@ jobs:
       - name: Read versions.json
         id: read
         run: |
+          # Exactly one variant may own the latest, <version> and <minor> tags
+          latest=$(jq -r 'map(select(.latest == true) | .variant) | join(", ")' versions.json)
+          if [ "$(jq 'map(select(.latest == true)) | length' versions.json)" -ne 1 ]; then
+            echo "::error file=versions.json::Exactly one variant must have \"latest\": true (found: ${latest:-none})"
+            exit 1
+          fi
+          echo "latest variant: $latest"
           echo "matrix=$(jq -c '{include: .}' versions.json)" >> "$GITHUB_OUTPUT"
 
   build:

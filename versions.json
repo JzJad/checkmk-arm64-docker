@@ -1,7 +1,7 @@
 [
   {
     "variant": "ubuntu",
-    "latest": true,
+    "latest": false,
     "base_image": "ubuntu:24.04",
     "distro": "noble",
     "edition": "community",
@@ -12,7 +12,7 @@
   },
   {
     "variant": "debian",
-    "latest": false,
+    "latest": true,
     "base_image": "debian:13",
     "distro": "trixie",
     "edition": "community",

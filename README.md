@@ -11,8 +11,8 @@ environment variables and hooks). Two variants of the Community edition are publ
 
 | Variant | Base image |
 |---|---|
-| `ubuntu` (default) | Ubuntu 24.04 noble, like the official Checkmk image |
-| `debian` | Debian 13 trixie |
+| `debian` (default) | Debian 13 trixie |
+| `ubuntu` | Ubuntu 24.04 noble, like the official Checkmk image |
 
 The packages are pinned with their SHA-256 in [versions.json](versions.json). A weekly job opens a PR when upstream
 publishes a new version (or re-uploads a package); merging it publishes new images.
@@ -34,11 +34,14 @@ printed in the container log on first start: `docker logs checkmk`.
 
 ## Tags
 
-| Ubuntu | Debian | Meaning |
+| Debian | Ubuntu | Meaning |
 |---|---|---|
-| `latest`, `ubuntu` | `debian` | Newest published version |
-| `2.5`, `2.5-ubuntu` | `2.5-debian` | Newest patch release of 2.5 |
-| `2.5.0p15`, `2.5.0p15-ubuntu` | `2.5.0p15-debian` | Exact version |
+| `latest`, `debian` | `ubuntu` | Newest published version |
+| `2.5`, `2.5-debian` | `2.5-ubuntu` | Newest patch release of 2.5 |
+| `2.5.0p15`, `2.5.0p15-debian` | `2.5.0p15-ubuntu` | Exact version |
+
+The untagged-variant tags (`latest`, `2.5`, `2.5.0p15`) belong to the entry with `"latest": true` in
+[versions.json](versions.json); the build fails unless exactly one entry has it.
 
 ## Environment variables
 
