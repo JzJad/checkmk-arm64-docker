@@ -1,10 +1,26 @@
 name: Docker
 
 on:
+  # Only for changes to the image inputs: keep the paths in sync with the
+  # COPY lines in the Dockerfile
   push:
     branches: [ "main" ]
+    paths:
+      - Dockerfile
+      - docker-entrypoint.sh
+      - hooks/**
+      - versions.json
+      - scripts/smoke-test.sh
+      - .github/workflows/docker-publish.yml
   pull_request:
     branches: [ "main" ]
+    paths:
+      - Dockerfile
+      - docker-entrypoint.sh
+      - hooks/**
+      - versions.json
+      - scripts/smoke-test.sh
+      - .github/workflows/docker-publish.yml
   # Monthly rebuild to pick up base image security updates
   schedule:
     - cron: '0 0 1 * *'
