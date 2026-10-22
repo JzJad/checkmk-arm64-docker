@@ -105,6 +105,8 @@ jobs:
             type=raw,value=latest,enable=${{ matrix.latest }}
           flavor: latest=false
 
+      # No cache: the apt layers must be rebuilt to pick up distro security
+      # updates (e.g. PHP), as their inputs don't change between rebuilds
       - name: Build image
         uses: docker/build-push-action@v7
         with:
@@ -113,7 +115,7 @@ jobs:
           load: true
           tags: cmk-smoke-test:${{ matrix.variant }}
           build-args: ${{ steps.cmk.outputs.build-args }}
-          cache-from: type=gha,scope=${{ matrix.variant }}
+          no-cache: true
           cache-to: type=gha,scope=${{ matrix.variant }},mode=max
 
       - name: Smoke test

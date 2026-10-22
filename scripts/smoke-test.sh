@@ -40,6 +40,16 @@ done
 echo "### omd status"
 docker exec "$NAME" omd status "$SITE"
 
+echo "### Checking that PHP is up to date"
+docker exec "$NAME" dpkg-query -W 'php*-cgi'
+outdated=$(docker exec "$NAME" bash -c \
+    "apt-get update -qq && apt list --upgradable 2>/dev/null | grep -E '^(php|libapache2-mod-php)' || true")
+if [ -n "$outdated" ]; then
+    echo "ERROR: PHP packages have pending updates:"
+    echo "$outdated"
+    exit 1
+fi
+
 echo "### Checking the login page"
 code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/$SITE/check_mk/login.py")
 if [ "$code" != "200" ]; then
