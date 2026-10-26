@@ -5,9 +5,9 @@
     "base_image": "ubuntu:24.04",
     "distro": "noble",
     "edition": "community",
-    "version": "2.5.0p15",
-    "release_tag": "2.5.0p15-noble",
-    "sha256": "34706eefd952e7b3ee713dd90c13ff26d1aacf4485d3ad5433422a649022eb5e",
+    "version": "2.5.0p17",
+    "release_tag": "2.5.0p17-noble",
+    "sha256": "b4dd8c638971d59dc7ecf3986844c165c58dccc248ae833592289d34d7f67d64",
     "extra_packages": ""
   },
   {
@@ -16,9 +16,9 @@
     "base_image": "debian:13",
     "distro": "trixie",
     "edition": "community",
-    "version": "2.5.0p15",
-    "release_tag": "2.5.0p15-trixie",
-    "sha256": "14c6844d640fa03820fcadd43f7364b1bf0d40b2b545dbc58204855a3bcbf022",
+    "version": "2.5.0p17",
+    "release_tag": "2.5.0p17-trixie",
+    "sha256": "43362e9b6ce6400520cd6bdb1e6054aefeefb3c537b4545fa7bfeb4d6b478cd7",
     "extra_packages": "php8.4-cgi"
   }
 ]
